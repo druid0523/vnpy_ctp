@@ -70,8 +70,8 @@ if host_machine.system() == 'windows'
 elif host_machine.system() == 'darwin'
   # Mac编译器设置
   extra_cpp_args = [
-    '-std=c++11',
     '-mmacosx-version-min=10.12',
+    '-Wno-unused-parameter'
   ]
   
   # 设置链接参数，包括@rpath到@loader_path的修改
@@ -93,17 +93,14 @@ elif host_machine.system() == 'darwin'
   
   # 定义Mac Framework依赖
   thostmduserapi_lib = declare_dependency(
-    dependencies: [py_dep],
     link_args: [
-      '-F', meson.current_source_dir() / 'vnpy_ctp/api',
+      '-F' + api_dir,
       '-framework', 'thostmduserapi_se'
     ]
   )
-  
   thosttraderapi_lib = declare_dependency(
-    dependencies: [py_dep],
     link_args: [
-      '-F', meson.current_source_dir() / 'vnpy_ctp/api',
+      '-F' + api_dir,
       '-framework', 'thosttraderapi_se'
     ]
   )
@@ -146,13 +143,9 @@ md_module = py.extension_module(
   'vnctpmd',
   sources: ['vnpy_ctp/api/vnctp/vnctpmd/vnctpmd.cpp'],
   include_directories: include_dirs,
-  dependencies: [py_dep],
+  dependencies: [py_dep, thostmduserapi_lib],  # 将库依赖放在正确位置
   cpp_args: extra_cpp_args,
-  link_args: extra_link_args + [
-    '-L' + (meson.current_source_dir() / 'vnpy_ctp/api'),
-    '-lthostmduserapi_se',
-    '-Wl,-rpath,$ORIGIN'
-  ],
+  link_args: extra_link_args,  # 移除了重复的链接参数
   install: true,
   install_rpath: '$ORIGIN',
   subdir: 'vnpy_ctp/api'
@@ -163,13 +156,9 @@ td_module = py.extension_module(
   'vnctptd',
   sources: ['vnpy_ctp/api/vnctp/vnctptd/vnctptd.cpp'],
   include_directories: include_dirs,
-  dependencies: [py_dep],
+  dependencies: [py_dep, thosttraderapi_lib],  # 修正依赖声明
   cpp_args: extra_cpp_args,
-  link_args: extra_link_args + [
-    '-L' + (meson.current_source_dir() / 'vnpy_ctp/api'),
-    '-lthosttraderapi_se',
-    '-Wl,-rpath,$ORIGIN'
-  ],
+  link_args: extra_link_args,
   install: true,
   install_rpath: '$ORIGIN',
   subdir: 'vnpy_ctp/api'
